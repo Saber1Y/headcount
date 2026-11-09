@@ -1,8 +1,8 @@
 name: Daily scan
 
+# The daily schedule lives on the Render runner (headcount/server.py, render.yaml).
+# This workflow stays for manual runs; add a schedule here only if the Render runner is retired.
 on:
-  schedule:
-    - cron: "15 14 * * *" # 14:15 UTC, after each 24-hour window ends
   workflow_dispatch:
     inputs:
       dry_run:

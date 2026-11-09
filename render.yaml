@@ -1,0 +1,43 @@
+# Render Blueprint: create both services from the dashboard with New > Blueprint.
+# Both run on Render's free tier.
+services:
+  # Runs the daily scan when POSTed /run, then pushes the snapshot to GitHub.
+  # It sleeps between runs; an outside scheduler wakes it once a day.
+  - type: web
+    name: headcount-runner
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: python3 -m compileall -q headcount
+    startCommand: python3 -m headcount.server
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - headcount/**
+        - render.yaml
+    envVars:
+      - key: RUN_TOKEN
+        generateValue: true
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPOSITORY
+        value: Saber1Y/headcount
+      - key: HEADCOUNT_WINDOWS
+        value: "48"
+
+  # The leaderboard site, rebuilt whenever a new snapshot or site change lands on main.
+  - type: web
+    name: headcount-site
+    runtime: static
+    branch: main
+    buildCommand: cd web && corepack pnpm install --frozen-lockfile && corepack pnpm build
+    staticPublishPath: web/out
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - web/**
+        - snapshots/**
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
