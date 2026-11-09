@@ -1,0 +1,59 @@
+.scroll {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+
+.table th,
+.table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table th {
+  font-weight: 500;
+  color: var(--ink-2);
+  white-space: nowrap;
+  border-bottom-color: var(--rule-strong);
+}
+
+.num {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.sub {
+  display: block;
+  color: var(--ink-3);
+}
+
+.barCell {
+  min-width: 8rem;
+}
+
+.pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.likely_scripted {
+  color: var(--scripted);
+}
+
+.possibly_scripted {
+  color: var(--mixed);
+}
+
+.no_signals {
+  color: var(--real);
+}

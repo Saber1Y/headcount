@@ -1,0 +1,82 @@
+.figure {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.chart {
+  position: relative;
+  min-height: 160px;
+}
+
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.grid {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.tick {
+  fill: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.contract {
+  fill: var(--scripted);
+  background: var(--scripted);
+}
+
+.rest {
+  fill: var(--rule-strong);
+  background: var(--rule-strong);
+}
+
+.dim {
+  opacity: 0.45;
+  transition: opacity 120ms ease;
+}
+
+.tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.12);
+  font-size: var(--step--1);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.tipTime {
+  color: var(--ink-3);
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 1px;
+  vertical-align: baseline;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.axisNote {
+  color: var(--ink-3);
+}

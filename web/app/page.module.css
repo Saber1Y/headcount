@@ -1,0 +1,73 @@
+.lede {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 52rem;
+}
+
+.lede h1 {
+  font-size: var(--step-4);
+  letter-spacing: -0.02em;
+}
+
+.dek {
+  font-size: var(--step-1);
+  color: var(--ink-2);
+}
+
+.census {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.quiet {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.quiet summary {
+  cursor: pointer;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.quietList {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  columns: 14rem;
+  column-gap: var(--space-5);
+  font-size: var(--step--1);
+}
+
+.quietList li {
+  padding-block: 2px;
+  break-inside: avoid;
+}
+
+.compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+}
+
+.compare > div {
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
+}
+
+.compareValue {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--step-3);
+  letter-spacing: -0.02em;
+}
+
+.compareNote {
+  grid-column: 1 / -1;
+}
