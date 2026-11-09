@@ -117,6 +117,10 @@ def run(data: Path) -> Path:
                 **_shares(a["txs_by_label"]),
                 "wallets_none": a["wallets_by_label"][signals.NONE],
                 "contracts": len(a["contracts"]),
+                "contract_list": [
+                    {"address": c["address"], "rule": c["rule"], "name": c["name"] or "", "sampled_txs": c["sampled_txs"]}
+                    for c in a["contracts"]
+                ],
                 "matched_by": ", ".join(rules) if rules else "not matched",
                 "frontend": a["frontend_status"],
                 "top_call": fn_name(a["selectors"]),

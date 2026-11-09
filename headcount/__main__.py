@@ -6,17 +6,19 @@ import argparse
 from pathlib import Path
 
 DATA = Path("data")
+SNAPSHOTS = Path("snapshots")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="headcount")
     parser.add_argument(
         "step",
-        choices=["sample", "apps", "enrich", "report", "export", "all"],
+        choices=["sample", "apps", "enrich", "report", "export", "snapshot", "all"],
         help="pipeline step to run",
     )
     args = parser.parse_args()
-    steps = ["sample", "apps", "enrich", "report", "export"] if args.step == "all" else [args.step]
+    all_steps = ["sample", "apps", "enrich", "report", "export", "snapshot"]
+    steps = all_steps if args.step == "all" else [args.step]
     for step in steps:
         if step == "sample":
             from . import sample
@@ -38,6 +40,10 @@ def main() -> None:
             from . import export
 
             export.run(DATA)
+        elif step == "snapshot":
+            from . import snapshot
+
+            snapshot.run(DATA / "out", SNAPSHOTS)
 
 
 if __name__ == "__main__":

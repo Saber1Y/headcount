@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -23,11 +25,17 @@ USER_TX_TYPES = {"0x0", "0x1", "0x2", "0x4"}
 
 @dataclass(frozen=True)
 class Plan:
-    windows: int = 48
-    blocks_per_window: int = 120
+    windows: int = int(os.environ.get("HEADCOUNT_WINDOWS", "48"))
+    blocks_per_window: int = int(os.environ.get("HEADCOUNT_BLOCKS_PER_WINDOW", "120"))
     span_hours: float = 24.0
     chunk: int = 40
     workers: int = 4
+
+
+# A plan older than this belongs to an earlier scan: start a new one instead of resuming.
+RESUME_HOURS = 12
+# Per-scan caches that go stale between scans (lifetime nonces grow every day).
+SCAN_CACHES = ("nonces.json",)
 
 
 def block_time(number: int) -> int:
@@ -90,7 +98,23 @@ def fetch_window(window: int, first: int, plan: Plan, out: Path) -> int:
     return len(rows)
 
 
+def start_fresh_if_stale(out: Path, now: float) -> bool:
+    """Drop an old scan's windows and per-scan caches. Returns True when it did."""
+    meta_path = out / "plan.json"
+    if not meta_path.exists():
+        return False
+    created = json.loads(meta_path.read_text()).get("created", 0)
+    if now - created < RESUME_HOURS * 3600:
+        return False
+    shutil.rmtree(out)
+    for name in SCAN_CACHES:
+        (out.parent / name).unlink(missing_ok=True)
+    return True
+
+
 def run(out: Path, plan: Plan = Plan()) -> dict:
+    if start_fresh_if_stale(out, time.time()):
+        print("previous scan is older than 12 hours: starting a new one", flush=True)
     out.mkdir(parents=True, exist_ok=True)
     meta_path = out / "plan.json"
     if meta_path.exists():

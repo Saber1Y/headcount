@@ -6,6 +6,8 @@ data/meta.json
 data/apps.json
 data/report.json
 data/selectors.json
+# Intermediate export; published results live in snapshots/
+data/out/
 
 # Generated page document for the hosted report
 report/index.doc.json
