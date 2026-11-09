@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Headcount local preview</title>
-<!-- Local stand-in for the dashboard runtime: theme tokens, dash.data / dash.draw over data/out/*.json. -->
+<!-- Local stand-in for the dashboard runtime: theme tokens, dash.data / dash.draw over the latest snapshot. -->
 <style>
   :root {
     --color-fg: #1d1d1b; --color-fg-muted: #6b6a66; --color-bg: #faf9f6; --color-panel: #ffffff;
@@ -35,7 +35,8 @@
 (async () => {
   const ids = ['summary', 'apps', 'groups', 'evidence', 'flags', 'windows', 'cohorts'];
   const store = {};
-  await Promise.all(ids.map(async (id) => { store[id] = await (await fetch(`../data/out/${id}.json`)).json(); }));
+  const [latest] = await (await fetch('../snapshots/index.json')).json();
+  await Promise.all(ids.map(async (id) => { store[id] = await (await fetch(`../snapshots/${latest.date}/${id}.json`)).json(); }));
   const draws = {};
   window.dash = {
     data: (id) => store[id] ? {status: 'ok', data: store[id], columns: Object.keys(store[id][0] || {})} : {status: 'missing', data: []},
