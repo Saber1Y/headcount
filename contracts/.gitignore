@@ -1,0 +1,4 @@
+cache/
+out/
+# Local anvil runs; keep LiteForge deployment records
+broadcast/*/31337/

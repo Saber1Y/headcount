@@ -1,0 +1,15 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.28"
+# Paris avoids PUSH0 and later opcodes, so the bytecode runs on any Arbitrum Orbit chain version.
+evm_version = "paris"
+optimizer = true
+optimizer_runs = 10000
+
+[fuzz]
+runs = 1000
+
+[rpc_endpoints]
+liteforge = "${LITEFORGE_RPC}"
