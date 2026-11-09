@@ -1,10 +1,10 @@
 # Headcount
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Tests](https://img.shields.io/badge/tests-20%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-37%20passing-brightgreen)
 ![Onchain](https://img.shields.io/badge/onchain-LitVM%20LiteForge-blue)
-![Loop](https://img.shields.io/badge/loop-sample%20→%20score%20→%20report-blueviolet)
-![Stack](https://img.shields.io/badge/stack-Python%20+%20JSON--RPC%20+%20d3-orange)
+![Loop](https://img.shields.io/badge/loop-sample%20→%20score%20→%20snapshot%20→%20fingerprint-blueviolet)
+![Stack](https://img.shields.io/badge/stack-Python%20+%20Next.js%20+%20Solidity-orange)
 
 **Real users, counted.**
 
@@ -28,6 +28,7 @@ Headcount labels behaviour, not intent, and makes no claim about who runs any wa
   - [Match contracts to apps](#match-contracts-to-apps)
   - [Score every wallet](#score-every-wallet)
   - [Publish the report](#publish-the-report)
+  - [Record each fingerprint on LitVM](#record-each-fingerprint-on-litvm)
 - [First findings](#first-findings)
 - [Architecture](#architecture)
 - [Component by component](#component-by-component)
@@ -44,12 +45,17 @@ Headcount labels behaviour, not intent, and makes no claim about who runs any wa
 
 ```bash
 cd headcount
-python3 -m headcount all  # sample, match apps, enrich, score, export
+python3 -m headcount all  # sample, match apps, enrich, score, export, snapshot
 ```
 
-The run reads about 5,800 blocks from the public LiteForge RPC and takes roughly an hour at its rate limit.
-Results land in `data/out/*.json`, one file per report section.
-Open `report/preview.html` through any static server to see the report locally.
+```bash
+cd headcount/web
+pnpm install && pnpm dev  # leaderboard at http://localhost:3000
+```
+
+The scan reads about 5,800 blocks from the public LiteForge RPC and takes roughly an hour at its rate limit.
+Each run writes a dated snapshot to `snapshots/<YYYY-MM-DD>/` with a SHA-256 fingerprint, and the site is built from those snapshots.
+A GitHub Actions job runs the scan every day.
 
 ## The one rule
 
@@ -88,7 +94,13 @@ Two or more signals is *likely scripted*, one is *possibly scripted*, none is *n
 
 ### Publish the report
 
-`python3 -m headcount export` writes row files for the hosted report: headline figures, traffic per window, every hub app, example wallets, unmatched contracts and signal counts.
+`python3 -m headcount export` writes row files: headline figures, traffic per window, every hub app, example wallets, unmatched contracts and signal counts.
+`python3 -m headcount snapshot` stores them under `snapshots/<date>/` with a fingerprint over the files, and the site in `web/` turns every snapshot into a leaderboard, one page per app and a method page.
+
+### Record each fingerprint on LitVM
+
+`contracts/src/HeadcountRegistry.sol` keeps one fingerprint per UTC day and never lets a day change.
+Anyone can recompute a snapshot's digest and call `verify(day, digest)`.
 
 ## First findings
 
@@ -119,14 +131,17 @@ flowchart LR
     S --> R[report<br/>signals + attribution]
     A --> R
     E --> R
-    R --> X[export<br/>data/out/*.json]
-    X --> P[Hosted report]
+    R --> X[export<br/>row files]
+    X --> N[snapshot<br/>snapshots/date + digest]
+    N --> W[Static site<br/>web/]
+    N -.-> C[HeadcountRegistry<br/>on LiteForge]
 ```
 
 | Tier | Runs | Can it move funds? | Responsibility |
 | --- | --- | --- | --- |
-| Pipeline | Locally, on demand | No | Read the chain and the web, write JSON |
-| Report | In the browser | No | Draw the exported rows |
+| Pipeline | Daily in GitHub Actions, or locally | No | Read the chain and the web, write a dated snapshot |
+| Site | Static files, built from snapshots | No | Leaderboard, app pages, method |
+| Registry | LiteForge contract | No | Hold one fingerprint per day, forever |
 
 ## Component by component
 
@@ -140,14 +155,20 @@ flowchart LR
 | `headcount/attribute.py` | Contract-to-app matching rules (pure, tested) |
 | `headcount/report.py` | Aggregate per app, per window, per cohort |
 | `headcount/export.py` | Flatten the report into row files |
-| `report/index.html` | The report page |
+| `headcount/snapshot.py` | Store dated snapshots, fingerprint them, keep the index |
+| `web/app/page.tsx` | Leaderboard, chain-wide shares, the busiest-contract story |
+| `web/app/apps/[id]/page.tsx` | One page per hub app: shares, example wallets, matched contracts, trend |
+| `web/app/method/page.tsx` | Signals, sampling, matching, limits, how to verify a snapshot |
+| `contracts/src/HeadcountRegistry.sol` | Append-only daily fingerprints with `verify` |
+| `.github/workflows/daily-scan.yml` | Daily scan, snapshot commit, fingerprint publish |
+| `report/index.html` | The hosted report page |
 
 ## How it uses LitVM
 
 **Reads:** `eth_getBlockByNumber`, `eth_getTransactionCount`, `eth_getCode` and `eth_getTransactionReceipt` on the LiteForge RPC; address metadata from the LiteForge explorer API; DIA and Goldsky are not used yet.
 
-**Writes:** none yet.
-An on-chain record of each report's fingerprint is on the roadmap.
+**Writes:** one `publish(day, digest, uri)` call a day to `HeadcountRegistry`, once the contract is deployed and the daily job has its publisher key.
+The contract is not deployed yet.
 
 ## Engineering decisions and the hard problems
 
@@ -166,12 +187,12 @@ An on-chain record of each report's fingerprint is on the roadmap.
 | Capability | Status |
 | --- | --- |
 | 24-hour sampling of LiteForge | Real - run on Nov 6-7, 2026 |
-| Wallet signals and labels | Real - 20 unit tests |
+| Wallet signals and labels | Real - unit tested |
 | App matching from frontend code | Real - 47 of 95 hub apps |
-| Hosted report | Real - private link |
-| Builder-facing website | Not yet established |
-| Daily scheduled scans | Not yet established |
-| Public leaderboard | Not yet established |
+| Dated snapshots with fingerprints | Real - `snapshots/2026-11-07` |
+| Leaderboard, app pages, method page | Real - builds locally; not hosted yet |
+| Daily scheduled scans | Built - workflow in place, first scheduled run pending |
+| Registry contract | Built - 12 Foundry tests; not deployed |
 | On-chain report fingerprints | Not yet established |
 
 48 hub apps could not be matched: bot checks (not bypassed), timeouts, or contracts their code does not reveal.
@@ -185,11 +206,20 @@ There is no labelled ground truth, so labels are behaviour estimates, not verdic
 | `tests/test_attribute.py` | 6 | Frontend, deployer, name and shared rules |
 | `tests/test_apps.py` | 4 | Scan merging, address pattern |
 | `tests/test_export.py` | 2 | Category names |
+| `tests/test_snapshot.py` | 5 | Snapshot folders, digest stability, index order, fresh-scan reset |
+| `contracts/test/HeadcountRegistry.t.sol` | 12 | Publish, overwrite and owner guards, day checks, two-step ownership, fuzzed `verify` |
 
 ```bash
 cd headcount
 python3 -m unittest discover -s tests -t .
 ```
+
+```bash
+cd headcount/contracts
+forge test -vv
+```
+
+The site is checked with `tsc --noEmit`, ESLint and a full static build in CI.
 
 ## Configuration
 
@@ -198,6 +228,11 @@ python3 -m unittest discover -s tests -t .
 | `LITEFORGE_RPC` | JSON-RPC endpoint, default the published Caldera URL |
 | `LITEFORGE_EXPLORER_API` | Explorer API base, default the published Caldera explorer |
 | `LITEFORGE_RPC_INTERVAL` | Seconds between RPC requests across threads, default 0.35 |
+| `HEADCOUNT_WINDOWS` | Sample windows per scan, default 48 |
+| `HEADCOUNT_BLOCKS_PER_WINDOW` | Consecutive blocks per window, default 120 |
+| `NEXT_PUBLIC_HEADCOUNT_REGISTRY` | Registry address shown on the site's method page |
+
+The daily job reads the repository variable `HEADCOUNT_REGISTRY` and the secret `REGISTRY_PUBLISHER_KEY`; without both it scans and commits snapshots but publishes nothing on-chain.
 
 LitVM is moving its infrastructure from Caldera to Zeeve, so these endpoints will change.
 
@@ -207,18 +242,21 @@ LitVM is moving its infrastructure from Caldera to Zeeve, so these endpoints wil
 headcount/
 ├── headcount/          # pipeline package: python3 -m headcount <step>
 ├── tests/              # unit tests for the pure logic
+├── snapshots/          # one folder per day + index.json, the site's data
+├── web/                # Next.js static site
+├── contracts/          # HeadcountRegistry (Foundry)
 ├── report/
-│   ├── index.html      # report page
+│   ├── index.html      # hosted report page
 │   └── preview.html    # local preview with a stand-in runtime
-└── data/
-    └── out/            # exported report rows (raw scan data is gitignored)
+├── .github/workflows/  # CI and the daily scan
+└── data/               # raw scan data and caches (gitignored)
 ```
 
 ## Tech stack, credits, roadmap
 
 ### Tech stack
 
-Python 3.13 standard library, curl, d3 v7.
+Python 3.13 standard library and curl for the pipeline, Next.js 16 and React 19 for the site, Solidity 0.8.28 and Foundry for the registry.
 
 ### Credits
 
@@ -226,10 +264,10 @@ LitVM and the LiteForge testnet, Caldera (RPC and explorer), the 4byte directory
 
 ### Roadmap
 
-- Builder-facing website: pick an app, get a shareable real-users report
-- Daily scheduled scans with trends
-- Public leaderboard ranked by real users
-- Report fingerprints recorded on LitVM
+- Deploy the registry on LiteForge and turn on daily publishing
+- Host the site
+- Check any contract address on demand, not only hub apps
+- Detect rotating wallet pools at the contract level
 
 ## Disclaimer and license
 
