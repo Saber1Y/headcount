@@ -1,0 +1,15 @@
+{
+ "date": "2026-11-07",
+ "digest": "0xa33ab448f6873a8eb79b0635ef89e2544c9bc54320ebdf755dd16f8a6d78b40d",
+ "window_start": "2026-11-06T13:42:20Z",
+ "window_end": "2026-11-07T13:42:20Z",
+ "files": [
+  "apps.json",
+  "cohorts.json",
+  "evidence.json",
+  "flags.json",
+  "groups.json",
+  "summary.json",
+  "windows.json"
+ ]
+}
