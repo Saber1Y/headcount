@@ -1,0 +1,98 @@
+name: Daily scan
+
+on:
+  schedule:
+    - cron: "15 14 * * *" # 14:15 UTC, after each 24-hour window ends
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Scan but do not commit a snapshot or publish its fingerprint"
+        type: boolean
+        default: true
+      windows:
+        description: "Sample windows (48 covers a day every 30 minutes)"
+        type: string
+        default: "48"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      HEADCOUNT_WINDOWS: ${{ inputs.windows || vars.HEADCOUNT_WINDOWS || '48' }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      HAS_KEY: ${{ secrets.REGISTRY_PUBLISHER_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -t .
+
+      # App frontend scans accumulate between runs, so a site that times out today keeps yesterday's evidence.
+      - name: Restore app scan cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/apps.json
+          key: apps-${{ github.run_id }}
+          restore-keys: apps-
+
+      - name: Scan LiteForge
+        run: python3 -m headcount all
+
+      - name: Save app scan cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/apps.json
+          key: apps-${{ github.run_id }}
+
+      - name: Show snapshot
+        run: |
+          cat snapshots/index.json | head -12
+          python3 -c "import json; s=json.load(open('data/out/summary.json'))[0]; print({k: s[k] for k in ('sampled_txs','share_likely_scripted','share_no_signals','apps_seen','top_contract_app')})"
+
+      - name: Commit snapshot
+        if: env.DRY_RUN != 'true'
+        run: |
+          git config user.name "headcount-bot"
+          git config user.email "headcount-bot@users.noreply.github.com"
+          git add snapshots
+          if git diff --cached --quiet; then
+            echo "No snapshot changes"
+          else
+            DATE=$(python3 -c "import json; print(json.load(open('snapshots/index.json'))[0]['date'])")
+            git commit -m "Add snapshot $DATE"
+            git push
+          fi
+
+      # Runs only once the registry is deployed and its publisher key is stored as a secret.
+      - name: Install Foundry
+        if: env.DRY_RUN != 'true' && vars.HEADCOUNT_REGISTRY != '' && env.HAS_KEY == 'true'
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Publish fingerprint to LiteForge
+        if: env.DRY_RUN != 'true' && vars.HEADCOUNT_REGISTRY != '' && env.HAS_KEY == 'true'
+        env:
+          REGISTRY: ${{ vars.HEADCOUNT_REGISTRY }}
+          LITEFORGE_RPC: ${{ vars.LITEFORGE_RPC || 'https://liteforge.rpc.caldera.xyz/http' }}
+          PUBLISHER_KEY: ${{ secrets.REGISTRY_PUBLISHER_KEY }}
+        run: |
+          read -r DAY DIGEST DATE < <(python3 -c "import json; e=json.load(open('snapshots/index.json'))[0]; print(e['date'].replace('-',''), e['digest'], e['date'])")
+          URI="https://github.com/${GITHUB_REPOSITORY}/tree/main/snapshots/${DATE}"
+          if [ "$(cast call "$REGISTRY" "verify(uint32,bytes32)(bool)" "$DAY" "$DIGEST" --rpc-url "$LITEFORGE_RPC")" = "true" ]; then
+            echo "Fingerprint for $DAY already published"
+            exit 0
+          fi
+          cast send "$REGISTRY" "publish(uint32,bytes32,string)" "$DAY" "$DIGEST" "$URI" \
+            --rpc-url "$LITEFORGE_RPC" --private-key "$PUBLISHER_KEY"
