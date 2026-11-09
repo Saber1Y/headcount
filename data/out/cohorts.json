@@ -1,0 +1,24 @@
+[
+ {
+  "cohort": "top_contract",
+  "group": "Senders to the busiest contract",
+  "wallets": 8114,
+  "median_lifetime_txs": 16254,
+  "median_sampled_txs": 4,
+  "median_windows_active": 2,
+  "wallets_likely_scripted": 837,
+  "wallets_possibly_scripted": 4785,
+  "wallets_no_signals": 2492
+ },
+ {
+  "cohort": "everyone_else",
+  "group": "Every other wallet",
+  "wallets": 9419,
+  "median_lifetime_txs": 125,
+  "median_sampled_txs": 1,
+  "median_windows_active": 1,
+  "wallets_likely_scripted": 14,
+  "wallets_possibly_scripted": 349,
+  "wallets_no_signals": 9056
+ }
+]

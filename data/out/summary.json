@@ -1,0 +1,33 @@
+[
+ {
+  "window_start": "2026-11-06T13:42:20Z",
+  "window_end": "2026-11-07T13:42:20Z",
+  "span_hours": 24.0,
+  "windows": 48,
+  "blocks_per_window": 120,
+  "sampled_blocks": 5760,
+  "est_blocks_per_day": 338505,
+  "sample_share_of_day": 0.017,
+  "sampled_txs": 84472,
+  "est_daily_txs": 4964270,
+  "wallets": 17533,
+  "wallets_likely": 851,
+  "wallets_possible": 5134,
+  "wallets_none": 11548,
+  "share_likely_scripted": 0.261,
+  "share_possibly_scripted": 0.4875,
+  "share_no_signals": 0.2515,
+  "attributed_txs": 70236,
+  "share_attributed": 0.8315,
+  "apps_listed": 95,
+  "apps_seen": 18,
+  "apps_frontend_scanned": 47,
+  "head_block": 68794989,
+  "top_contract": "0x9d001eaa62e3c8a7e3f5a47523fa7dc3790fcbbb",
+  "top_contract_share": 0.6865,
+  "top_contract_sampled_txs": 57986,
+  "top_contract_call": "stake",
+  "top_contract_source": "Unverified",
+  "top_contract_app": "Aura"
+ }
+]
