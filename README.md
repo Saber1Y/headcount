@@ -1,7 +1,7 @@
 # Headcount
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Tests](https://img.shields.io/badge/tests-37%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-47%20passing-brightgreen)
 ![Onchain](https://img.shields.io/badge/onchain-LitVM%20LiteForge-blue)
 ![Loop](https://img.shields.io/badge/loop-sample%20→%20score%20→%20snapshot%20→%20fingerprint-blueviolet)
 ![Stack](https://img.shields.io/badge/stack-Python%20+%20Next.js%20+%20Solidity-orange)
@@ -37,6 +37,7 @@ Headcount labels behaviour, not intent, and makes no claim about who runs any wa
 - [What's real vs pending](#whats-real-vs-pending)
 - [Tests](#tests)
 - [Configuration](#configuration)
+- [Deploy](#deploy)
 - [Project layout](#project-layout)
 - [Tech stack, credits, roadmap](#tech-stack-credits-roadmap)
 - [Disclaimer and license](#disclaimer-and-license)
@@ -55,7 +56,7 @@ pnpm install && pnpm dev  # leaderboard at http://localhost:3000
 
 The scan reads about 5,800 blocks from the public LiteForge RPC and takes roughly an hour at its rate limit.
 Each run writes a dated snapshot to `snapshots/<YYYY-MM-DD>/` with a SHA-256 fingerprint, and the site is built from those snapshots.
-A GitHub Actions job runs the scan every day.
+A free Render service runs the scan every day and pushes the snapshot; see [Deploy](#deploy).
 
 ## The one rule
 
@@ -139,8 +140,8 @@ flowchart LR
 
 | Tier | Runs | Can it move funds? | Responsibility |
 | --- | --- | --- | --- |
-| Pipeline | Daily in GitHub Actions, or locally | No | Read the chain and the web, write a dated snapshot |
-| Site | Static files, built from snapshots | No | Leaderboard, app pages, method |
+| Pipeline | Daily on a free Render web service, or locally | No | Read the chain and the web, write a dated snapshot |
+| Site | Static site on Render, rebuilt from snapshots | No | Leaderboard, app pages, method |
 | Registry | LiteForge contract | No | Hold one fingerprint per day, forever |
 
 ## Component by component
@@ -160,7 +161,9 @@ flowchart LR
 | `web/app/apps/[id]/page.tsx` | One page per hub app: shares, example wallets, matched contracts, trend |
 | `web/app/method/page.tsx` | Signals, sampling, matching, limits, how to verify a snapshot |
 | `contracts/src/HeadcountRegistry.sol` | Append-only daily fingerprints with `verify` |
-| `.github/workflows/daily-scan.yml` | Daily scan, snapshot commit, fingerprint publish |
+| `headcount/server.py` | Render runner: starts a scan on an authenticated `POST /run`, stays awake while it runs, pushes the snapshot |
+| `render.yaml` | Render Blueprint for the runner and the static site, both on the free tier |
+| `.github/workflows/daily-scan.yml` | Manual scan on GitHub Actions, with fingerprint publishing |
 | `report/index.html` | The hosted report page |
 
 ## How it uses LitVM
@@ -190,8 +193,8 @@ The contract is not deployed yet.
 | Wallet signals and labels | Real - unit tested |
 | App matching from frontend code | Real - 47 of 95 hub apps |
 | Dated snapshots with fingerprints | Real - `snapshots/2026-11-07` |
-| Leaderboard, app pages, method page | Real - builds locally; not hosted yet |
-| Daily scheduled scans | Built - workflow in place, first scheduled run pending |
+| Leaderboard, app pages, method page | Real - builds locally; Render static site defined, not deployed yet |
+| Daily scheduled scans | Built - Render runner tested locally; not deployed yet |
 | Registry contract | Built - 12 Foundry tests; not deployed |
 | On-chain report fingerprints | Not yet established |
 
@@ -207,6 +210,7 @@ There is no labelled ground truth, so labels are behaviour estimates, not verdic
 | `tests/test_apps.py` | 4 | Scan merging, address pattern |
 | `tests/test_export.py` | 2 | Category names |
 | `tests/test_snapshot.py` | 5 | Snapshot folders, digest stability, index order, fresh-scan reset |
+| `tests/test_server.py` | 10 | Run auth, one scan at a time, health, token redaction, real clone-scan-commit-push against a local repo |
 | `contracts/test/HeadcountRegistry.t.sol` | 12 | Publish, overwrite and owner guards, day checks, two-step ownership, fuzzed `verify` |
 
 ```bash
@@ -232,9 +236,43 @@ The site is checked with `tsc --noEmit`, ESLint and a full static build in CI.
 | `HEADCOUNT_BLOCKS_PER_WINDOW` | Consecutive blocks per window, default 120 |
 | `NEXT_PUBLIC_HEADCOUNT_REGISTRY` | Registry address shown on the site's method page |
 
-The daily job reads the repository variable `HEADCOUNT_REGISTRY` and the secret `REGISTRY_PUBLISHER_KEY`; without both it scans and commits snapshots but publishes nothing on-chain.
+| `RUN_TOKEN` | Runner: bearer token the scheduler sends to `POST /run` (Render generates it) |
+| `GITHUB_TOKEN` | Runner: fine-grained token with Contents read and write on this repository only |
+| `GITHUB_REPOSITORY` | Runner: repository to clone and push, default `Saber1Y/headcount` |
+
+The manual GitHub workflow reads the repository variable `HEADCOUNT_REGISTRY` and the secret `REGISTRY_PUBLISHER_KEY`; without both it publishes nothing on-chain.
 
 LitVM is moving its infrastructure from Caldera to Zeeve, so these endpoints will change.
+
+## Deploy
+
+Everything runs on free tiers: two Render services and one free scheduler.
+
+### 1. Render
+
+In the Render dashboard choose **New > Blueprint**, pick this repository, and apply `render.yaml`.
+It creates `headcount-runner` (free web service) and `headcount-site` (free static site).
+When asked for `GITHUB_TOKEN`, paste a fine-grained GitHub token limited to this repository with *Contents: Read and write*.
+
+### 2. Daily trigger
+
+A free Render service sleeps between requests and has no cron, so a free scheduler such as cron-job.org starts each scan:
+
+| Setting | Value |
+| --- | --- |
+| URL | `https://<headcount-runner>.onrender.com/run` |
+| Method | `POST` |
+| Header | `Authorization: Bearer <RUN_TOKEN from the Render dashboard>` |
+| Schedule | Daily, 14:15 UTC |
+
+The runner answers `202` and keeps itself awake until the scan ends, then sleeps.
+`GET /health` shows the last run's status and message.
+
+### 3. Check
+
+```bash
+curl https://<headcount-runner>.onrender.com/health
+```
 
 ## Project layout
 
