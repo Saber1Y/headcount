@@ -1,0 +1,448 @@
+<meta name="dash-one-writer">
+<style>
+  .hc { display: grid; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); max-width: 78rem; margin-inline: auto; }
+  .hc h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+  .hc h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
+  .hc p { margin: 0; max-width: 68ch; line-height: 1.5; }
+  .hc .lede { font-size: var(--cds-font-size-body); }
+  .hc .muted { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .hc .head { display: grid; gap: var(--cds-gap-sm); }
+  .hc .page b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .hc .tiles { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
+  .hc .tile { display: grid; gap: var(--cds-gap-xs); align-content: start; padding: var(--cds-pad-md) 0; border-top: 1px solid var(--color-border-line); }
+  .hc .tile .v { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; min-height: 1.3em; }
+  .hc .tile .v.bad { color: var(--color-bad); }
+  .hc .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: grid; gap: var(--cds-gap-md); min-width: 0; }
+  .hc .card-head { display: grid; gap: var(--cds-gap-xs); }
+  .hc .legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .hc .legend span { display: inline-flex; align-items: center; gap: var(--cds-gap-xs); }
+  .hc .sw { width: 0.625rem; height: 0.625rem; border-radius: 2px; display: inline-block; }
+  .hc .sw.likely { background: var(--cds-chart-status-critical); }
+  .hc .sw.possible { background: var(--color-warn); }
+  .hc .sw.none { background: var(--cds-chart-muted); }
+  .hc .chart { position: relative; min-height: 240px; }
+  .hc .tip { position: absolute; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); pointer-events: none; white-space: nowrap; display: grid; gap: 2px; }
+  .hc .tip .t { color: var(--cds-text-secondary); }
+  .hc .tools { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
+  .hc input[type=search] { font: inherit; font-size: var(--cds-font-size-body); padding: var(--cds-pad-xs) var(--cds-pad-sm); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-bg); color: var(--color-fg); min-width: 0; flex: 1 1 14rem; max-width: 22rem; }
+  .hc input[type=search]:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 1px; }
+  .hc .scroll { overflow: auto; max-height: 34rem; min-width: 0; }
+  .hc table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .hc th, .hc td { text-align: left; padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); vertical-align: middle; }
+  .hc th { position: sticky; top: 0; background: var(--color-panel); font-weight: var(--cds-font-weight-medium); white-space: nowrap; z-index: 1; }
+  .hc th button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  .hc th button:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+  .hc th[aria-sort=ascending] button::after { content: " ↑"; }
+  .hc th[aria-sort=descending] button::after { content: " ↓"; }
+  .hc td.num, .hc th.num { text-align: right; }
+  .hc tbody tr.pick { cursor: pointer; }
+  .hc tbody tr.pick:hover { background: color-mix(in srgb, var(--color-fg) 5%, transparent); }
+  .hc tbody tr.pick:focus-visible { outline: 2px solid var(--color-fg); outline-offset: -2px; }
+  .hc tbody tr[aria-selected=true] { background: color-mix(in srgb, var(--color-fg) 9%, transparent); }
+  .hc .bar { display: grid; grid-template-columns: 3.5rem minmax(4rem, 1fr); gap: var(--cds-gap-sm); align-items: center; min-width: 8rem; }
+  .hc .bar i { height: 0.5rem; border-radius: 2px; background: var(--cds-chart-status-critical); display: block; }
+  .hc .bar .track { background: var(--cds-chart-grid); border-radius: 2px; height: 0.5rem; overflow: hidden; }
+  .hc .addr { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; max-width: 11rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hc a { color: inherit; text-underline-offset: 2px; }
+  .hc .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: var(--cds-font-size-caption); white-space: nowrap; border: 1px solid currentColor; }
+  .hc .pill.likely_scripted { color: var(--color-bad); }
+  .hc .pill.possibly_scripted { color: var(--color-warn); }
+  .hc .pill.no_signals { color: var(--color-ok); }
+  .hc details { border-top: 1px solid var(--color-border-line); padding-top: var(--cds-pad-md); }
+  .hc summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); }
+  .hc dl { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr; gap: var(--cds-gap-sm) var(--cds-gap-md); margin: var(--cds-gap-md) 0 0; }
+  .hc dt { font-weight: var(--cds-font-weight-medium); }
+  .hc dd { margin: 0; line-height: 1.5; max-width: 68ch; }
+  @media (max-width: 40rem) { .hc dl { grid-template-columns: 1fr; } .hc .hide-narrow { display: none; } }
+  [data-dash-source-state=empty] { color: transparent; }
+  [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+  @media (prefers-reduced-motion: no-preference) {
+    .hc .bars rect { animation: hc-rise var(--cds-dur-slow) var(--cds-ease-out) both; transform-origin: bottom; transform-box: fill-box; }
+    @keyframes hc-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  }
+</style>
+
+<div class="hc page">
+  <header class="head">
+    <h1 id="top">LiteForge Headcount</h1>
+    <p class="lede">In a 24-hour sample of the LitVM testnet, <b data-draw="pct" data-source="summary" data-field="share_likely_scripted" data-row="0">—</b> of transactions came from wallets with two or more scripted signals and <b data-draw="pct" data-source="summary" data-field="share_possibly_scripted" data-row="0">—</b> from wallets with one. Only <b data-draw="pct" data-source="summary" data-field="share_no_signals" data-row="0">—</b> came from wallets with none. A single contract, belonging to <b data-draw="text" data-source="summary" data-field="top_contract_app" data-row="0">—</b>, took <b data-draw="pct" data-source="summary" data-field="top_contract_share" data-row="0">—</b> of all transactions.</p>
+    <p class="muted">Sample from <span data-draw="when" data-source="summary" data-field="window_start" data-row="0">—</span> to <span data-draw="when" data-source="summary" data-field="window_end" data-row="0">—</span> UTC: <span data-draw="int" data-source="summary" data-field="windows" data-row="0">—</span> windows of <span data-draw="int" data-source="summary" data-field="blocks_per_window" data-row="0">—</span> blocks each, spaced evenly, <span data-draw="pct" data-source="summary" data-field="sample_share_of_day" data-row="0">—</span> of the day's blocks. Labels describe behaviour, not intent: a developer's test script counts as scripted too.</p>
+  </header>
+
+  <section class="tiles" aria-label="Headline figures">
+    <div class="tile">
+      <span class="muted">Transactions per day, estimated</span>
+      <span class="v" data-draw="compact" data-source="summary" data-field="est_daily_txs" data-row="0">—</span>
+    </div>
+    <div class="tile">
+      <span class="muted">Share from likely scripted wallets</span>
+      <span class="v bad" data-draw="pct" data-source="summary" data-field="share_likely_scripted" data-row="0">—</span>
+    </div>
+    <div class="tile">
+      <span class="muted">Share to the busiest contract</span>
+      <span class="v" data-draw="pct" data-source="summary" data-field="top_contract_share" data-row="0">—</span>
+    </div>
+    <div class="tile">
+      <span class="muted">Wallets with no signals</span>
+      <span class="v" data-draw="int" data-source="summary" data-field="wallets_none" data-row="0">—</span>
+      <span class="muted">of <span data-draw="int" data-source="summary" data-field="wallets" data-row="0">—</span> wallets seen</span>
+    </div>
+  </section>
+
+  <section class="card" id="through-the-day">
+    <div class="card-head">
+      <h2>One contract, around the clock</h2>
+      <p class="muted">Sampled transactions in each 30-second window. Calls to <span data-draw="text" data-source="summary" data-field="top_contract_app" data-row="0">—</span>'s contract <span class="addr" data-draw="text" data-source="summary" data-field="top_contract" data-row="0">—</span> (<span data-draw="text" data-source="summary" data-field="top_contract_call" data-row="0">—</span>, source code <span data-draw="lower" data-source="summary" data-field="top_contract_source" data-row="0">—</span>) hold steady at every hour. Everything else rises and falls with the day.</p>
+      <div class="legend"><span><i class="sw likely"></i>Busiest contract</span><span><i class="sw none"></i>Everything else</span></div>
+    </div>
+    <div class="chart" data-draw="daychart" data-source="windows"></div>
+  </section>
+
+  <section class="card" id="who-calls-it">
+    <div class="card-head">
+      <h2>Who calls it</h2>
+      <p class="muted">Its senders take turns. Each shows up in only a few windows, so the per-wallet round-the-clock signal rarely fires, but their lifetime transaction counts give them away.</p>
+    </div>
+    <div class="scroll">
+      <table data-source="cohorts" data-row-key="cohort">
+        <thead><tr>
+          <th data-field="group">Wallets</th>
+          <th data-field="wallets" class="num">Count</th>
+          <th data-field="median_lifetime_txs" class="num">Median lifetime txs</th>
+          <th data-field="median_windows_active" class="num hide-narrow">Median windows seen</th>
+          <th data-field="wallets_likely_scripted" class="num">Likely scripted</th>
+          <th data-field="wallets_possibly_scripted" class="num hide-narrow">Possibly scripted</th>
+          <th data-field="wallets_no_signals" class="num">No signals</th>
+        </tr></thead>
+        <tbody data-draw="cohorts"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="apps">
+    <div class="card-head">
+      <h2>Apps on the testnet hub</h2>
+      <p class="muted">Each listed app's contracts, found in its own website code, then by shared deployer or contract name. Select an app to see example wallets. Apps with no sampled traffic are at the bottom.</p>
+    </div>
+    <div class="tools">
+      <input type="search" id="app-search" placeholder="Search apps or categories" aria-label="Search apps">
+      <span class="muted"><span data-draw="int" data-source="summary" data-field="apps_seen" data-row="0">—</span> of <span data-draw="int" data-source="summary" data-field="apps_listed" data-row="0">—</span> listed apps had traffic in the sample. Matched apps account for <span data-draw="pct" data-source="summary" data-field="share_attributed" data-row="0">—</span> of all sampled transactions.</span>
+    </div>
+    <div class="scroll">
+      <table data-source="apps" data-row-key="app_id" id="apps-table">
+        <thead><tr>
+          <th data-field="app" data-sort="app"><button type="button">App</button></th>
+          <th data-field="category" data-sort="category" class="hide-narrow"><button type="button">Category</button></th>
+          <th data-field="sampled_txs" data-sort="sampled_txs" class="num"><button type="button">Sampled txs</button></th>
+          <th data-field="est_daily_txs" data-sort="est_daily_txs" class="num hide-narrow"><button type="button">Per day, est.</button></th>
+          <th data-field="wallets" data-sort="wallets" class="num"><button type="button">Wallets</button></th>
+          <th data-field="share_likely_scripted" data-sort="share_likely_scripted"><button type="button">Likely scripted</button></th>
+          <th data-field="wallets_none" data-sort="wallets_none" class="num"><button type="button">No-signal wallets</button></th>
+          <th data-field="matched_by" data-sort="matched_by" class="hide-narrow"><button type="button">Matched by</button></th>
+        </tr></thead>
+        <tbody data-draw="apps"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="evidence">
+    <div class="card-head">
+      <h2>Example wallets for <span data-draw="picked">—</span></h2>
+      <p class="muted">Up to three of the busiest likely scripted wallets and three with no signals. Each links to the explorer, with one transaction to this app.</p>
+    </div>
+    <div class="scroll">
+      <table data-source="evidence" data-row-key="key">
+        <thead><tr>
+          <th data-field="wallet">Wallet</th>
+          <th data-field="label_name">Label</th>
+          <th data-field="flags" class="hide-narrow">Signals</th>
+          <th data-field="lifetime_txs" class="num">Lifetime txs</th>
+          <th data-field="hours_active" class="num hide-narrow">Hours active</th>
+          <th data-field="max_in_window" class="num hide-narrow">Most in 30 s</th>
+          <th data-field="tx">Transaction</th>
+        </tr></thead>
+        <tbody data-draw="evidence"></tbody>
+      </table>
+    </div>
+    <p class="muted noevidence" hidden>This app had no sampled transactions, so there are no example wallets.</p>
+  </section>
+
+  <section class="card" id="unmatched">
+    <div class="card-head">
+      <h2>Busiest traffic not matched to a hub app</h2>
+      <p class="muted">Contracts grouped by the wallet that deployed them, plus contracts several apps share. Unverified means the explorer has no published source code.</p>
+    </div>
+    <div class="scroll">
+      <table data-source="groups" data-row-key="group">
+        <thead><tr>
+          <th data-field="top_contract">Busiest contract</th>
+          <th data-field="top_name" class="hide-narrow">Name on explorer</th>
+          <th data-field="source_code" class="hide-narrow">Source code</th>
+          <th data-field="kind" class="hide-narrow">Group</th>
+          <th data-field="top_call">Most common call</th>
+          <th data-field="sampled_txs" class="num">Sampled txs</th>
+          <th data-field="wallets" class="num">Wallets</th>
+          <th data-field="share_likely_scripted">Likely scripted</th>
+        </tr></thead>
+        <tbody data-draw="groups"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="signals">
+    <div class="card-head">
+      <h2>The four signals</h2>
+      <p class="muted">A wallet with two or more is labelled likely scripted, one is possibly scripted. Wallet counts are among wallets seen in the sample.</p>
+    </div>
+    <div class="scroll">
+      <table data-source="flags" data-row-key="flag">
+        <thead><tr>
+          <th data-field="signal">Signal</th>
+          <th data-field="rule">Rule</th>
+          <th data-field="wallets" class="num">Wallets</th>
+        </tr></thead>
+        <tbody data-draw="flags"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <details id="method">
+    <summary>Method and limits</summary>
+    <dl>
+      <dt>Sampling</dt>
+      <dd>Reading every block of a day through the public RPC takes most of a day, so the scan reads short runs of consecutive blocks spread evenly over 24 hours. Because the windows are spread evenly in time, the share of transactions per label is a fair estimate of the day. Daily totals are scaled up from the sample.</dd>
+      <dt>Wallet counts lean busy</dt>
+      <dd>A wallet that sends every few seconds is almost certain to appear in a 30-second window; a person who visits once a day usually is not. So wallet counts over-represent busy wallets. Read the transaction shares as the headline, and treat no-signal wallet counts as a floor.</dd>
+      <dt>Signals</dt>
+      <dd>Lifetime transaction count comes from the wallet's nonce on the RPC. Hours active, bursts and repeated calls come from the sample. A shared funding wallet is not used: almost every wallet, person or script, was funded by the faucet.</dd>
+      <dt>Matching apps</dt>
+      <dd>An address found in exactly one app's website code, on its homepage or a page linked from it, belongs to that app. Contracts from the same deployer inherit it. Otherwise a contract or token name that contains the app's name. Addresses several apps embed, such as shared tokens, stay unmatched. Sites behind a bot check were not scanned. <span data-draw="int" data-source="summary" data-field="apps_frontend_scanned" data-row="0">—</span> of <span data-draw="int" data-source="summary" data-field="apps_listed" data-row="0">—</span> listed apps gave up contract addresses this way.</dd>
+      <dt>Who runs the scripts</dt>
+      <dd>Scripted wallets calling an app do not mean the app runs them. Apps with airdrops, points or staking rewards attract farmers who script their own wallets. This scan shows where the scripted traffic goes, not who sent it.</dd>
+      <dt>What this cannot tell</dt>
+      <dd>There is no confirmed list of which wallets are bots, so these are behaviour labels, not verdicts. A careful script with random delays will pass as no signals. A person who batches many actions quickly can trip the burst signal.</dd>
+    </dl>
+  </details>
+</div>
+
+<script>
+  const fmt = {
+    pct: d3.format('.1%'),
+    int: d3.format(','),
+    compact: (n) => (n >= 10000 ? new Intl.NumberFormat('en', {notation: 'compact', maximumFractionDigits: 1}).format(n) : d3.format(',')(n)),
+    when: (s) => d3.utcFormat('%b %-d, %H:%M')(new Date(s)),
+    text: (s) => String(s),
+    lower: (s) => String(s).toLowerCase(),
+  };
+  window.hcFmt = fmt;
+  const cell = (el) => {
+    const d = dash.data(el.dataset.source);
+    if (d.status !== 'ok') { el.textContent = '—'; return; }
+    const row = d.data[Number(el.dataset.row || 0)];
+    const v = row ? row[el.dataset.field] : null;
+    el.textContent = v == null ? '—' : fmt[el.dataset.draw](v);
+  };
+  ['pct', 'int', 'compact', 'when', 'text', 'lower'].forEach((n) => dash.draw(n, cell));
+</script>
+
+<script>
+  const LABELS = [
+    {key: 'top_contract', name: 'Busiest contract', color: 'var(--cds-chart-status-critical)'},
+    {key: 'everything_else', name: 'Everything else', color: 'var(--cds-chart-muted)'},
+  ];
+  dash.draw('daychart', (el) => {
+    const d = dash.data('windows');
+    el.replaceChildren();
+    if (d.status !== 'ok' || !d.data.length) { el.textContent = '—'; return; }
+    const rows = d.data.map((r) => ({...r, t: new Date(r.start)}));
+    const W = Math.max(280, el.clientWidth), H = 240;
+    const totals = rows.map((r) => LABELS.reduce((s, l) => s + r[l.key], 0));
+    const y = d3.scaleLinear([0, d3.max(totals)], [H - 24, 8]).nice();
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', 'Sampled transactions per window by label');
+    const yAxis = svg.append('g').call(d3.axisLeft(y).ticks(4).tickSize(0).tickPadding(6).tickFormat(d3.format('~s'))).attr('font-size', null).attr('font-family', null);
+    yAxis.selectAll('text').attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)');
+    yAxis.select('.domain').remove();
+    const left = Math.ceil(d3.max(yAxis.selectAll('text').nodes(), (n) => n.getComputedTextLength()) || 20) + 12;
+    yAxis.attr('transform', `translate(${left},0)`);
+    const x = d3.scaleBand(rows.map((r) => r.window), [left, W - 4]).padding(0.2);
+    svg.append('g').selectAll('line').data(y.ticks(4)).join('line')
+      .attr('x1', left).attr('x2', W - 4).attr('y1', (v) => y(v)).attr('y2', (v) => y(v))
+      .attr('stroke', 'var(--cds-chart-grid)').attr('stroke-width', 1);
+    const stack = d3.stack().keys(LABELS.map((l) => l.key))(rows);
+    const bars = svg.append('g').attr('class', 'bars');
+    stack.forEach((layer, i) => {
+      bars.append('g').attr('fill', LABELS[i].color).selectAll('rect').data(layer).join('rect')
+        .attr('x', (p) => x(p.data.window)).attr('width', Math.min(x.bandwidth(), 32))
+        .attr('y', (p) => y(p[1])).attr('height', (p) => Math.max(0, y(p[0]) - y(p[1])));
+    });
+    const ticks = rows.filter((r, i) => i % Math.max(1, Math.ceil(rows.length / Math.floor((W - left) / 56))) === 0);
+    svg.append('g').selectAll('text').data(ticks).join('text')
+      .attr('x', (r) => x(r.window) + x.bandwidth() / 2).attr('y', H - 6).attr('text-anchor', 'middle')
+      .attr('fill', 'var(--color-fg-muted)').style('font-size', 'var(--cds-font-size-caption)')
+      .text((r) => d3.utcFormat('%H:%M')(r.t));
+    const tip = d3.select(el).append('div').attr('class', 'tip').style('opacity', 0);
+    svg.append('g').selectAll('rect').data(rows).join('rect')
+      .attr('x', (r) => x(r.window) - (x.step() - x.bandwidth()) / 2).attr('width', x.step())
+      .attr('y', 0).attr('height', H - 24).attr('fill', 'transparent')
+      .on('pointermove', (ev, r) => {
+        tip.selectAll('*').remove();
+        tip.append('span').attr('class', 't').text(d3.utcFormat('%b %-d, %H:%M UTC')(r.t));
+        LABELS.forEach((l) => tip.append('span').text(`${l.name}: ${d3.format(',')(r[l.key])}`));
+        const [mx] = d3.pointer(ev, el);
+        const box = tip.node().getBoundingClientRect();
+        tip.style('left', `${Math.min(Math.max(0, mx + 12), el.clientWidth - box.width)}px`).style('top', '8px').style('opacity', 1);
+      })
+      .on('pointerleave', () => tip.style('opacity', 0));
+  });
+</script>
+
+<script>
+  window.hcPicked = window.hcPicked || null;
+  const sortState = {key: 'sampled_txs', dir: -1};
+  const query = () => (document.querySelector('#app-search')?.value || '').trim().toLowerCase();
+  const barCell = (td, share) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'bar';
+    const label = document.createElement('span');
+    label.textContent = d3.format('.1%')(share);
+    const track = document.createElement('span');
+    track.className = 'track';
+    const fill = document.createElement('i');
+    fill.style.width = `${Math.round(share * 100)}%`;
+    track.append(fill);
+    wrap.append(label, track);
+    td.append(wrap);
+  };
+  const td = (tr, text, cls) => {
+    const c = tr.insertCell();
+    if (cls) c.className = cls;
+    if (text != null) c.textContent = text;
+    return c;
+  };
+  dash.draw('apps', (tbody) => {
+    const d = dash.data('apps');
+    tbody.replaceChildren();
+    if (d.status !== 'ok') return;
+    const q = query();
+    const rows = d.data.filter((r) => !q || `${r.app} ${r.category}`.toLowerCase().includes(q));
+    rows.sort((a, b) => {
+      const va = a[sortState.key], vb = b[sortState.key];
+      const c = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb));
+      return c * sortState.dir || b.sampled_txs - a.sampled_txs;
+    });
+    if (!window.hcPicked) window.hcPicked = [...d.data].sort((a, b) => b.sampled_txs - a.sampled_txs)[0]?.app_id;
+    for (const r of rows) {
+      const tr = tbody.insertRow();
+      tr.dataset.key = r.app_id;
+      tr.className = 'pick';
+      tr.tabIndex = 0;
+      tr.setAttribute('aria-selected', String(r.app_id === window.hcPicked));
+      td(tr, r.app);
+      td(tr, r.category, 'hide-narrow');
+      td(tr, d3.format(',')(r.sampled_txs), 'num');
+      td(tr, d3.format(',')(r.est_daily_txs), 'num hide-narrow');
+      td(tr, d3.format(',')(r.wallets), 'num');
+      const c = td(tr, null);
+      if (r.sampled_txs) barCell(c, r.share_likely_scripted); else c.textContent = '—';
+      td(tr, d3.format(',')(r.wallets_none), 'num');
+      td(tr, r.matched_by, 'hide-narrow');
+      const pick = () => { window.hcPicked = r.app_id; dash.draw('apps'); dash.draw('evidence'); dash.draw('picked'); };
+      tr.onclick = pick;
+      tr.onkeydown = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } };
+    }
+  });
+  document.querySelectorAll('#app-search').forEach((input) => input.addEventListener('input', () => dash.draw('apps')));
+  document.querySelectorAll('#apps-table th[data-sort]').forEach((th) => {
+    th.querySelector('button')?.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      sortState.dir = sortState.key === key ? -sortState.dir : (key === 'app' || key === 'category' || key === 'matched_by' ? 1 : -1);
+      sortState.key = key;
+      document.querySelectorAll('#apps-table th[data-sort]').forEach((h) => h.removeAttribute('aria-sort'));
+      th.setAttribute('aria-sort', sortState.dir === 1 ? 'ascending' : 'descending');
+      dash.draw('apps');
+    });
+  });
+  document.querySelectorAll('#apps-table th[data-sort="sampled_txs"]').forEach((th) => th.setAttribute('aria-sort', 'descending'));
+
+  const explorer = 'https://liteforge.explorer.caldera.xyz';
+  const link = (cell, href, text) => {
+    const a = document.createElement('a');
+    a.href = href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = text;
+    cell.append(a);
+  };
+  dash.draw('picked', (el) => {
+    const d = dash.data('apps');
+    const row = d.status === 'ok' ? d.data.find((r) => r.app_id === window.hcPicked) : null;
+    el.textContent = row ? row.app : '—';
+  });
+  dash.draw('evidence', (tbody) => {
+    const d = dash.data('evidence');
+    tbody.replaceChildren();
+    const mine = d.status === 'ok' ? d.data.filter((e) => e.app_id === window.hcPicked) : [];
+    document.querySelectorAll('.noevidence').forEach((p) => { p.hidden = d.status !== 'ok' || mine.length > 0; });
+    for (const r of mine) {
+      const tr = tbody.insertRow();
+      tr.dataset.key = r.key;
+      const w = td(tr, null, 'addr');
+      link(w, `${explorer}/address/${r.wallet}`, r.wallet);
+      const lc = td(tr, null);
+      const pill = document.createElement('span');
+      pill.className = `pill ${r.label}`;
+      pill.textContent = r.label_name;
+      lc.append(pill);
+      td(tr, r.flags, 'hide-narrow');
+      td(tr, r.lifetime_txs == null ? '—' : d3.format(',')(r.lifetime_txs), 'num');
+      td(tr, d3.format(',')(r.hours_active), 'num hide-narrow');
+      td(tr, d3.format(',')(r.max_in_window), 'num hide-narrow');
+      const t = td(tr, null, 'addr');
+      link(t, `${explorer}/tx/${r.tx}`, r.tx);
+    }
+  });
+  dash.draw('groups', (tbody) => {
+    const d = dash.data('groups');
+    tbody.replaceChildren();
+    if (d.status !== 'ok') return;
+    for (const r of d.data) {
+      const tr = tbody.insertRow();
+      tr.dataset.key = r.group;
+      const c = td(tr, null, 'addr');
+      link(c, `${explorer}/address/${r.top_contract}`, r.top_contract);
+      td(tr, r.top_name || '—', 'hide-narrow');
+      td(tr, r.source_code, 'hide-narrow');
+      td(tr, r.kind, 'hide-narrow');
+      td(tr, r.top_call || '—');
+      td(tr, d3.format(',')(r.sampled_txs), 'num');
+      td(tr, d3.format(',')(r.wallets), 'num');
+      barCell(td(tr, null), r.share_likely_scripted);
+    }
+  });
+  dash.draw('cohorts', (tbody) => {
+    const d = dash.data('cohorts');
+    tbody.replaceChildren();
+    if (d.status !== 'ok') return;
+    const n = d3.format(',');
+    for (const r of d.data) {
+      const tr = tbody.insertRow();
+      tr.dataset.key = r.cohort;
+      td(tr, r.group);
+      td(tr, n(r.wallets), 'num');
+      td(tr, n(r.median_lifetime_txs), 'num');
+      td(tr, n(r.median_windows_active), 'num hide-narrow');
+      td(tr, n(r.wallets_likely_scripted), 'num');
+      td(tr, n(r.wallets_possibly_scripted), 'num hide-narrow');
+      td(tr, n(r.wallets_no_signals), 'num');
+    }
+  });
+  dash.draw('flags', (tbody) => {
+    const d = dash.data('flags');
+    tbody.replaceChildren();
+    if (d.status !== 'ok') return;
+    for (const r of d.data) {
+      const tr = tbody.insertRow();
+      tr.dataset.key = r.flag;
+      td(tr, r.signal);
+      td(tr, r.rule);
+      td(tr, d3.format(',')(r.wallets), 'num');
+    }
+  });
+</script>

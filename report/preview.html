@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headcount local preview</title>
+<!-- Local stand-in for the dashboard runtime: theme tokens, dash.data / dash.draw over data/out/*.json. -->
+<style>
+  :root {
+    --color-fg: #1d1d1b; --color-fg-muted: #6b6a66; --color-bg: #faf9f6; --color-panel: #ffffff;
+    --color-border-line: #e3e1db; --color-ok: #2f7d4f; --color-warn: #b7791f; --color-bad: #c2412d;
+    --cds-chart-status-critical: #c2412d; --cds-chart-muted: #b9b6ae; --cds-chart-grid: #ecebe6; --cds-chart-axis: #c9c6be;
+    --cds-surface-popover: #ffffff; --cds-border: #e3e1db; --cds-shadow-popover: 0 4px 14px rgb(0 0 0 / .12); --cds-text-secondary: #6b6a66;
+    --font-anthropic-sans: ui-sans-serif, system-ui, sans-serif; --font-anthropic-serif: Georgia, serif;
+    --cds-font-size-caption: 12px; --cds-font-size-body: 15px; --cds-font-size-heading: 17px; --cds-font-size-title: 30px; --cds-font-weight-medium: 550;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 16px; --cds-gap-lg: 24px; --cds-gap-xl: 36px;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 20px; --cds-radius: 8px;
+    --cds-dur-slow: 400ms; --cds-ease-out: cubic-bezier(.2,.8,.2,1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-fg: #ecebe6; --color-fg-muted: #a3a19a; --color-bg: #1c1c1a; --color-panel: #252523;
+      --color-border-line: #3a3936; --cds-chart-muted: #6d6b65; --cds-chart-grid: #33322f; --cds-surface-popover: #2c2c2a; --cds-border: #3a3936; --cds-text-secondary: #a3a19a;
+      color-scheme: dark;
+    }
+  }
+  body { margin: 0; background: var(--color-bg); color: var(--color-fg); }
+  #dash-root { padding: 24px max(16px, env(safe-area-inset-left, 0px)); }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+</head>
+<body>
+<div id="dash-root"></div>
+<script>
+(async () => {
+  const ids = ['summary', 'apps', 'groups', 'evidence', 'flags', 'windows', 'cohorts'];
+  const store = {};
+  await Promise.all(ids.map(async (id) => { store[id] = await (await fetch(`../data/out/${id}.json`)).json(); }));
+  const draws = {};
+  window.dash = {
+    data: (id) => store[id] ? {status: 'ok', data: store[id], columns: Object.keys(store[id][0] || {})} : {status: 'missing', data: []},
+    draw: (name, fn) => {
+      if (fn) draws[name] = fn;
+      document.querySelectorAll(`[data-draw="${name}"]`).forEach((el) => { if (!el.closest('[hidden]')) draws[name](el); });
+    },
+    onData: (fn) => fn(),
+    colors: ['#c2412d', '#b9b6ae'],
+  };
+  const html = await (await fetch('index.html')).text();
+  const root = document.getElementById('dash-root');
+  root.innerHTML = html;
+  for (const old of root.querySelectorAll('script')) {
+    const s = document.createElement('script');
+    s.textContent = `{${old.textContent}}`;
+    old.replaceWith(s);
+  }
+  window.addEventListener('resize', () => Object.keys(draws).forEach((n) => dash.draw(n)));
+})();
+</script>
+</body>
+</html>
