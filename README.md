@@ -12,7 +12,7 @@ Most activity on the LitVM testnet comes from scripted wallets farming for rewar
 Headcount reads the chain, scores every wallet on plain behaviour rules, and reports how much of each app's traffic looks scripted.
 Honest builders get a number they can show; everyone else gets a fair leaderboard.
 
-Live report: [LiteForge Headcount](https://claude.ai/artifact/SS51tXbv5cKbRRAGAdL51J) (private for now) · Data from LitVM LiteForge testnet (chain 4441).
+Live site: [headcount-site.onrender.com](https://headcount-site.onrender.com) · Runner: [headcount-runner.onrender.com/health](https://headcount-runner.onrender.com/health) · Data from LitVM LiteForge testnet (chain 4441).
 
 [See it in one command](#see-it-in-one-command) · [The one rule](#the-one-rule) · [First findings](#first-findings) · [What's real vs pending](#whats-real-vs-pending) · [Tests](#tests)
 
@@ -193,8 +193,8 @@ The contract is not deployed yet.
 | Wallet signals and labels | Real - unit tested |
 | App matching from frontend code | Real - 47 of 95 hub apps |
 | Dated snapshots with fingerprints | Real - `snapshots/2026-11-07` |
-| Leaderboard, app pages, method page | Real - builds locally; Render static site defined, not deployed yet |
-| Daily scheduled scans | Built - Render runner tested locally; not deployed yet |
+| Leaderboard, app pages, method page | Real - live on Render |
+| Daily scheduled scans | Built - Render runner live and healthy; first scheduled scan pending |
 | Registry contract | Built - 12 Foundry tests; not deployed |
 | On-chain report fingerprints | Not yet established |
 
